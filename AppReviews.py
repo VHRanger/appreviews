@@ -1,3 +1,4 @@
+import nltk
 import numpy as np
 import pandas as pd
 import requests
@@ -112,3 +113,45 @@ def get_reviews(
             single_country_reviews(appID, country=country)
             ).reset_index(drop=True)
     return df
+
+
+
+def break_sentence(review):
+	"""
+	Given a text, returns adjectives and related noun
+	Text is possibly multiple sentences
+
+	ARGUMENTS
+	-----------
+	review:
+		single string. Body of text to tokenize
+
+	RETURNS
+	---------
+	list of strings. 
+	Each string is a n-gram with a single nouns and multiple qualifiers
+	n is variable (multiple adjectives can modify the same noun)
+	"""
+    returned_token_list = list()
+    sentences = nltk.sent_tokenize(review)
+    for sent in sentences:       
+        sentence_structure = dict()     
+        words = nltk.pos_tag(word_tokenize(sent))
+        # note: adjectives is ordered by sentence
+        adjectives = [words.index(adj) 
+                      for adj in words 
+                      if adj[1] in ['JJ', 'JJR', 'JJS', 'VBP']]
+        nouns = [words.index(adj) 
+                 for adj in words 
+                 if adj[1] in ['NN', 'NNP', 'NNPS', 'NNS']]
+        closest_nouns = [(adj - np.array(nouns)).argmin() for adj in adjectives]
+        for pos in range(len(adjectives)):
+            sentence_structure.setdefault(closest_nouns[pos], [])
+            sentence_structure[closest_nouns[pos]].append(adjectives[pos])
+        for noun in sentence_structure:
+            returned_token_list.append(
+                str(' '.join([words[adj][0] for adj in sentence_structure[noun]])
+                    + ' ' 
+                    + words[nouns[noun]][0])
+            )
+    return returned_token_list
