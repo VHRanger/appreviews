@@ -155,3 +155,29 @@ def break_sentence(review):
                     + words[nouns[noun]][0])
             )
     return returned_token_list
+
+
+def outputTopics(reviews, n_topics=20, excluded_words=[], n_top_words=13):
+    """
+    Print topic top words
+    Uses LDA to get topic clusters 
+    outputs top words from each
+    """
+    word_count_model = CountVectorizer(stop_words='english')
+    word_bag2 = word_count_model.fit_transform(reviews)
+
+    vocab = word_count_model.get_feature_names()
+
+    model = sklearn.decomposition.LatentDirichletAllocation(
+                n_topics=n_topics, learning_method ='batch', 
+                random_state=1)
+    model.fit(word_bag2)
+    topic_word = model.components_
+    
+    # Output top topic words
+    for i, topic_dist in enumerate(topic_word):
+        topic_words = list(np.array(vocab)[np.argsort(topic_dist)][:-(n_top_words):-1])
+        for drop_word in excluded_words:
+            try: topic_words.remove(drop_word)
+            except: pass
+        print('Topic {}: {}'.format(i, ' '.join(topic_words)))
